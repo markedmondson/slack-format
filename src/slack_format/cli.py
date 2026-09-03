@@ -376,12 +376,13 @@ def run():
     output = SlackRenderer(options.target, options.tables, options.table_width).render(document)
     if options.copy:
         copy_to_clipboard(output)
-    print(output, flush=True)
+    print(output)
 
 
 def main():
     try:
         run()
+        sys.stdout.flush()
     except BrokenPipeError:
         silence_broken_pipe()
         return 1
