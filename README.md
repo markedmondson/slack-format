@@ -79,6 +79,8 @@ Use `--tables code` or `--tables records` to override the automatic choice. Chan
 
 Run `slack-format --help` for every option.
 
+If the formatted output exceeds 4,000 characters, `slack-format` warns on stderr because Slack recommends shorter messages. Above 40,000 characters, it warns that Slack truncates the message. The formatted output is never truncated.
+
 ## Development
 
 Run the tests against the source tree:

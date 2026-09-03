@@ -131,6 +131,41 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(0, result.returncode)
         self.assertEqual("*Result*\n", result.stdout)
 
+    def test_warns_above_slacks_recommended_length(self):
+        result = self.run_command(input_text="x" * 4_001)
+
+        self.assertEqual(0, result.returncode)
+        self.assertEqual("x" * 4_001 + "\n", result.stdout)
+        self.assertEqual(
+            "slack-format: warning: output is 4,001 characters; Slack recommends 4,000 or fewer.\n",
+            result.stderr,
+        )
+
+    def test_warns_about_truncation_above_slacks_maximum_length(self):
+        result = self.run_command(input_text="x" * 40_001)
+
+        self.assertEqual(0, result.returncode)
+        self.assertEqual("x" * 40_001 + "\n", result.stdout)
+        self.assertEqual(
+            "slack-format: warning: output is 40,001 characters; Slack truncates messages above 40,000.\n",
+            result.stderr,
+        )
+
+    def test_uses_the_normal_warning_at_slacks_length_boundaries(self):
+        expectations = {
+            4_000: "",
+            40_000: (
+                "slack-format: warning: output is 40,000 characters; Slack recommends 4,000 or fewer.\n"
+            ),
+        }
+        for length, warning in expectations.items():
+            with self.subTest(length=length):
+                result = self.run_command(input_text="x" * length)
+
+                self.assertEqual(0, result.returncode)
+                self.assertEqual("x" * length + "\n", result.stdout)
+                self.assertEqual(warning, result.stderr)
+
     def test_rejects_a_non_positive_table_width(self):
         result = self.run_command("--table-width", "0", input_text="hello")
 
@@ -150,6 +185,21 @@ class CommandTest(unittest.TestCase):
 
             self.assertEqual(0, result.returncode)
             self.assertEqual("*Ready*", copied_path.read_text(encoding="utf-8"))
+
+    def test_long_output_is_copied_without_truncation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory_path = Path(directory)
+            copied_path = directory_path / "copied.txt"
+            fake_pbcopy = directory_path / "pbcopy"
+            fake_pbcopy.write_text(f"#!/bin/sh\nexec /usr/bin/tee '{copied_path}' >/dev/null\n", encoding="utf-8")
+            fake_pbcopy.chmod(0o755)
+            env = {"PATH": f"{directory}{os.pathsep}{os.environ['PATH']}"}
+            input_text = "x" * 4_001
+
+            result = self.run_command("--copy", input_text=input_text, env=env)
+
+            self.assertEqual(0, result.returncode)
+            self.assertEqual(input_text, copied_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
