@@ -199,7 +199,25 @@ class CommandTest(unittest.TestCase):
             result = self.run_command("--copy", input_text=input_text, env=env)
 
             self.assertEqual(0, result.returncode)
+            self.assertEqual(input_text + "\n", result.stdout)
+            self.assertEqual(
+                "slack-format: warning: output is 4,001 characters; Slack recommends 4,000 or fewer.\n",
+                result.stderr,
+            )
             self.assertEqual(input_text, copied_path.read_text(encoding="utf-8"))
+
+    def test_clipboard_failure_does_not_print_length_warning(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake_pbcopy = Path(directory) / "pbcopy"
+            fake_pbcopy.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+            fake_pbcopy.chmod(0o755)
+            env = {"PATH": f"{directory}{os.pathsep}{os.environ['PATH']}"}
+
+            result = self.run_command("--copy", input_text="x" * 4_001, env=env)
+
+            self.assertEqual(1, result.returncode)
+            self.assertEqual("", result.stdout)
+            self.assertEqual("slack-format: pbcopy failed\n", result.stderr)
 
 
 if __name__ == "__main__":

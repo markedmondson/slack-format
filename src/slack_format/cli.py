@@ -367,9 +367,9 @@ def run():
         raise RuntimeError("--table-width must be positive")
     document = parse_markdown(read_input(options.file))
     output = SlackRenderer(options.target, options.tables, options.table_width).render(document)
-    warn_if_long(output)
     if options.copy:
         copy_to_clipboard(output)
+    warn_if_long(output)
     print(output)
 
 
