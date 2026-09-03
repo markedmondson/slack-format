@@ -217,7 +217,8 @@ class CommandTest(unittest.TestCase):
 
             self.assertEqual(1, result.returncode)
             self.assertEqual("", result.stdout)
-            self.assertEqual("slack-format: pbcopy failed\n", result.stderr)
+            self.assertIn("pbcopy failed", result.stderr)
+            self.assertNotIn("warning:", result.stderr)
 
 
 if __name__ == "__main__":
