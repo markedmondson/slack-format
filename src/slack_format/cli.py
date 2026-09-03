@@ -368,6 +368,20 @@ def silence_broken_pipe():
         os.close(devnull)
 
 
+def warn_if_long(output):
+    length = len(output)
+    if length > 40_000:
+        print(
+            f"slack-format: warning: output is {length:,} characters; Slack truncates messages above 40,000.",
+            file=sys.stderr,
+        )
+    elif length > 4_000:
+        print(
+            f"slack-format: warning: output is {length:,} characters; Slack recommends 4,000 or fewer.",
+            file=sys.stderr,
+        )
+
+
 def run():
     options = arguments()
     if options.table_width < 1:
@@ -376,6 +390,7 @@ def run():
     output = SlackRenderer(options.target, options.tables, options.table_width).render(document)
     if options.copy:
         copy_to_clipboard(output)
+    warn_if_long(output)
     print(output)
 
 
