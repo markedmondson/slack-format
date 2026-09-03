@@ -18,15 +18,37 @@ brew install pandoc pipx
 
 ## Install
 
+The supported installation method is `pipx` directly from this repository:
+
 ```sh
 pipx install git+https://github.com/markedmondson/slack-format.git
 ```
 
-To install from a local clone:
+Upgrade to the latest commit (reinstall uses the original Git source):
 
 ```sh
-pipx install .
+pipx reinstall slack-format
 ```
+
+Uninstall it:
+
+```sh
+pipx uninstall slack-format
+```
+
+### Work from a local clone
+
+For development, install the checkout in editable mode:
+
+```sh
+git clone https://github.com/markedmondson/slack-format.git
+cd slack-format
+pipx install --editable .
+```
+
+The `slack-format` command now runs the code in that checkout, so a `git pull`
+updates the next run. Uninstall the existing `slack-format` package first if you
+are switching from the standard installation.
 
 ## Usage
 
