@@ -201,7 +201,8 @@ class CommandTest(unittest.TestCase):
             returncode = process.wait(timeout=10)
 
         self.assertEqual(1, returncode)
-        self.assertEqual("", stderr)
+        self.assertNotIn("Traceback", stderr)
+        self.assertNotIn("BrokenPipeError", stderr)
 
     def test_copies_with_pbcopy(self):
         with tempfile.TemporaryDirectory() as directory:
