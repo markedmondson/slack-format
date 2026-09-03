@@ -376,8 +376,7 @@ def run():
     output = SlackRenderer(options.target, options.tables, options.table_width).render(document)
     if options.copy:
         copy_to_clipboard(output)
-    sys.stdout.write(f"{output}\n")
-    sys.stdout.flush()
+    print(output, flush=True)
 
 
 def main():
