@@ -6,11 +6,25 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from slack_format import __version__
 from slack_format.cli import SlackRenderer, parse_markdown
 
 
 PANDOC_AVAILABLE = shutil.which("pandoc") is not None
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+class VersionTest(unittest.TestCase):
+    def test_reports_package_version(self):
+        command = [sys.executable, "-m", "slack_format.cli", "--version"]
+        command_env = os.environ.copy()
+        command_env["PYTHONPATH"] = str(PROJECT_ROOT / "src")
+
+        result = subprocess.run(command, text=True, capture_output=True, env=command_env, check=False)
+
+        self.assertEqual(0, result.returncode)
+        self.assertEqual(f"slack-format {__version__}\n", result.stdout)
+        self.assertEqual("", result.stderr)
 
 
 @unittest.skipUnless(PANDOC_AVAILABLE, "pandoc is required")

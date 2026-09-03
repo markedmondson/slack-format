@@ -17,7 +17,22 @@ jobs:
           python-version: "3.9"
       - name: Install Pandoc
         run: sudo apt-get update && sudo apt-get install --yes pandoc
-      - name: Install package
-        run: python -m pip install .
+      - name: Build wheel
+        run: python -m pip wheel --no-deps --wheel-dir dist .
+      - name: Install wheel
+        run: python -m pip install dist/*.whl
+      - name: Verify installed command and version
+        run: |
+          python - <<'PY'
+          import subprocess
+          from importlib.metadata import version
+
+          import slack_format
+
+          installed_version = version("slack-format")
+          assert slack_format.__version__ == installed_version
+          output = subprocess.check_output(["slack-format", "--version"], text=True)
+          assert output.strip() == f"slack-format {installed_version}"
+          PY
       - name: Run tests
         run: python -m unittest discover -s tests

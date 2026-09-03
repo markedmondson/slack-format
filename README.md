@@ -79,6 +79,12 @@ Use `--tables code` or `--tables records` to override the automatic choice. Chan
 
 Run `slack-format --help` for every option.
 
+Report the installed version:
+
+```sh
+slack-format --version
+```
+
 ## Development
 
 Run the tests against the source tree:
@@ -88,6 +94,18 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 ```
 
 The tests invoke the installed Pandoc binary to catch incompatible AST changes.
+
+### Release
+
+After the version change has merged and CI passes, create the matching tag and GitHub release from `main`:
+
+```sh
+git switch main
+git pull --ff-only
+git tag -a v0.1.0 -m "v0.1.0"
+git push origin v0.1.0
+gh release create v0.1.0 --generate-notes
+```
 
 ## License
 
