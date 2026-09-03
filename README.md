@@ -14,18 +14,57 @@ On macOS:
 
 ```sh
 brew install pandoc pipx
+pipx ensurepath
 ```
 
+Open a new terminal after running `pipx ensurepath`.
+
 ## Install
+
+The supported installation method is `pipx` directly from this repository:
 
 ```sh
 pipx install git+https://github.com/markedmondson/slack-format.git
 ```
 
-To install from a local clone:
+For GitHub installs, use `reinstall` to upgrade. `pipx upgrade` compares package
+versions, so same-version commits can leave the installed code stale:
 
 ```sh
-pipx install .
+pipx reinstall slack-format
+```
+
+Uninstall it:
+
+```sh
+pipx uninstall slack-format
+```
+
+### Work from a local clone
+
+If `slack-format` is already installed, uninstall it before switching sources:
+
+```sh
+pipx uninstall slack-format
+```
+
+Then install the checkout in editable mode:
+
+```sh
+git clone https://github.com/markedmondson/slack-format.git
+cd slack-format
+pipx install --editable .
+```
+
+The `slack-format` command now runs the code in that checkout. Update it with
+`git pull`.
+
+To switch back to the GitHub install, uninstall the editable package first.
+`pipx reinstall` preserves the existing source, so it does not switch modes:
+
+```sh
+pipx uninstall slack-format
+pipx install git+https://github.com/markedmondson/slack-format.git
 ```
 
 ## Usage
