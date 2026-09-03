@@ -10,6 +10,8 @@ import sys
 import unicodedata
 from pathlib import Path
 
+from slack_format import __version__
+
 
 class SlackRenderer:
     def __init__(self, target="paste", table_style="auto", table_width=80):
@@ -305,6 +307,7 @@ def arguments():
         epilog="For manual paste, enable Slack's 'Format messages with markup' preference.",
     )
     parser.add_argument("file", nargs="?", help="Markdown file, or - for stdin")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "--target",
         choices=("paste", "markdown", "api"),
