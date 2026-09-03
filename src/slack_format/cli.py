@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -317,15 +318,20 @@ def arguments():
 
 
 def read_input(filename):
-    if not filename or filename == "-":
-        return sys.stdin.read()
-    return Path(filename).read_text(encoding="utf-8")
+    try:
+        if not filename or filename == "-":
+            return sys.stdin.read()
+        return Path(filename).read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        raise RuntimeError("input is not valid UTF-8") from None
 
 
 def parse_markdown(markdown):
     pandoc = shutil.which("pandoc")
     if not pandoc:
-        raise RuntimeError("pandoc is required (install it with: brew install pandoc)")
+        raise RuntimeError(
+            "pandoc is required (install it from https://pandoc.org/installing.html or run: brew install pandoc)"
+        )
     result = subprocess.run(
         [pandoc, "--from=gfm", "--to=json"],
         input=markdown,
@@ -341,10 +347,25 @@ def parse_markdown(markdown):
 def copy_to_clipboard(output):
     pbcopy = shutil.which("pbcopy")
     if not pbcopy:
-        raise RuntimeError("pbcopy is not available on this system")
-    result = subprocess.run([pbcopy], input=output, text=True, check=False)
+        raise RuntimeError("pbcopy is required for --copy (it is included with macOS)")
+    result = subprocess.run([pbcopy], input=output, text=True, capture_output=True, check=False)
     if result.returncode:
-        raise RuntimeError("pbcopy failed")
+        detail = result.stderr.strip().splitlines()[0] if result.stderr.strip() else None
+        message = "pbcopy failed to copy the formatted output"
+        raise RuntimeError(f"{message}: {detail}" if detail else message)
+
+
+def silence_broken_pipe():
+    try:
+        stdout = sys.stdout.fileno()
+    except (AttributeError, OSError, ValueError):
+        return
+
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(devnull, stdout)
+    finally:
+        os.close(devnull)
 
 
 def run():
@@ -355,12 +376,16 @@ def run():
     output = SlackRenderer(options.target, options.tables, options.table_width).render(document)
     if options.copy:
         copy_to_clipboard(output)
-    print(output)
+    sys.stdout.write(f"{output}\n")
+    sys.stdout.flush()
 
 
 def main():
     try:
         run()
+    except BrokenPipeError:
+        silence_broken_pipe()
+        return 1
     except (OSError, RuntimeError, json.JSONDecodeError) as error:
         print(f"slack-format: {error}", file=sys.stderr)
         return 1
