@@ -30,6 +30,12 @@ pipx install .
 
 ## Usage
 
+Report the installed version:
+
+```sh
+slack-format --version
+```
+
 Read a file:
 
 ```sh
@@ -78,12 +84,6 @@ Wide tables and tables containing links become records so they remain readable o
 Use `--tables code` or `--tables records` to override the automatic choice. Change the automatic width threshold with `--table-width COLUMNS`.
 
 Run `slack-format --help` for every option.
-
-Report the installed version:
-
-```sh
-slack-format --version
-```
 
 ## Development
 
