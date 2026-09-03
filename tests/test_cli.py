@@ -148,6 +148,19 @@ class CommandTest(unittest.TestCase):
         self.assertEqual("slack-format: input is not valid UTF-8\n", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
 
+    def test_rejects_invalid_utf8_from_stdin_without_a_traceback(self):
+        command = [sys.executable, "-m", "slack_format.cli"]
+        command_env = os.environ.copy()
+        command_env["PYTHONPATH"] = str(PROJECT_ROOT / "src")
+        command_env["LANG"] = "C.UTF-8"
+        command_env["PYTHONIOENCODING"] = "utf-8:surrogateescape"
+
+        result = subprocess.run(command, input=b"\xff", capture_output=True, env=command_env, check=False)
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual(b"slack-format: input is not valid UTF-8\n", result.stderr)
+        self.assertNotIn(b"Traceback", result.stderr)
+
     def test_explains_how_to_install_missing_pandoc(self):
         with tempfile.TemporaryDirectory() as directory:
             result = self.run_command(input_text="hello", env={"PATH": directory})

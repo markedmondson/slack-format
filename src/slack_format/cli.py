@@ -320,7 +320,7 @@ def arguments():
 def read_input(filename):
     try:
         if not filename or filename == "-":
-            return sys.stdin.read()
+            return sys.stdin.buffer.read().decode("utf-8")
         return Path(filename).read_text(encoding="utf-8")
     except UnicodeDecodeError:
         raise RuntimeError("input is not valid UTF-8") from None
