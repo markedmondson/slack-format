@@ -137,6 +137,86 @@ class CommandTest(unittest.TestCase):
         self.assertEqual(1, result.returncode)
         self.assertIn("--table-width must be positive", result.stderr)
 
+    def test_rejects_invalid_utf8_without_a_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "message.md"
+            path.write_bytes(b"\xff")
+
+            result = self.run_command(str(path))
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual("slack-format: input is not valid UTF-8\n", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_rejects_invalid_utf8_from_stdin_without_a_traceback(self):
+        command = [sys.executable, "-m", "slack_format.cli"]
+        command_env = os.environ.copy()
+        command_env["PYTHONPATH"] = str(PROJECT_ROOT / "src")
+        command_env["LANG"] = "C.UTF-8"
+        command_env["PYTHONIOENCODING"] = "utf-8:surrogateescape"
+
+        result = subprocess.run(command, input=b"\xff", capture_output=True, env=command_env, check=False)
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual(b"slack-format: input is not valid UTF-8\n", result.stderr)
+        self.assertNotIn(b"Traceback", result.stderr)
+
+    def test_explains_how_to_install_missing_pandoc(self):
+        with tempfile.TemporaryDirectory() as directory:
+            result = self.run_command(input_text="hello", env={"PATH": directory})
+
+        self.assertEqual(1, result.returncode)
+        self.assertIn("pandoc is required", result.stderr)
+        self.assertIn("pandoc.org/installing.html", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_explains_that_pbcopy_requires_macos(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake_pandoc = Path(directory) / "pandoc"
+            fake_pandoc.symlink_to(shutil.which("pandoc"))
+
+            result = self.run_command("--copy", input_text="hello", env={"PATH": directory})
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual("slack-format: pbcopy is required for --copy (it is included with macOS)\n", result.stderr)
+
+    def test_reports_pbcopy_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fake_pbcopy = Path(directory) / "pbcopy"
+            fake_pbcopy.write_text("#!/bin/sh\necho 'clipboard unavailable' >&2\nexit 7\n", encoding="utf-8")
+            fake_pbcopy.chmod(0o755)
+            env = {"PATH": f"{directory}{os.pathsep}{os.environ['PATH']}"}
+
+            result = self.run_command("--copy", input_text="hello", env=env)
+
+        self.assertEqual(1, result.returncode)
+        self.assertEqual(
+            "slack-format: pbcopy failed to copy the formatted output: clipboard unavailable\n",
+            result.stderr,
+        )
+
+    def test_exits_cleanly_when_output_pipe_closes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "message.md"
+            path.write_text("x" * 100_000, encoding="utf-8")
+            command = [sys.executable, "-m", "slack_format.cli", str(path)]
+            command_env = os.environ.copy()
+            command_env["PYTHONPATH"] = str(PROJECT_ROOT / "src")
+            process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=command_env,
+            )
+            process.stdout.close()
+            stderr = process.stderr.read().decode()
+            process.stderr.close()
+            returncode = process.wait(timeout=10)
+
+        self.assertEqual(1, returncode)
+        self.assertNotIn("Traceback", stderr)
+        self.assertNotIn("BrokenPipeError", stderr)
+
     def test_copies_with_pbcopy(self):
         with tempfile.TemporaryDirectory() as directory:
             directory_path = Path(directory)
